@@ -1,9 +1,10 @@
-FROM golang:1.20.6 as builder
+FROM golang:1.20.6 AS builder
 WORKDIR /app
 COPY . .
-RUN GOOS=linux go build -ldflags="-w -s" -o bin/api cmd/api/main.go
+RUN GOOS=linux go build -ldflags="-w -s" -o api cmd/api/main.go
 
-FROM scratch
-COPY --from=builder /app/bin/api .
+FROM golang:1.20.6 AS final
+WORKDIR /
+COPY --from=builder /app/api .
 EXPOSE 8080
-CMD [ "./api" ]
+ENTRYPOINT ["/api"]
