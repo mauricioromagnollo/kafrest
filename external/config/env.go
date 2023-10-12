@@ -17,11 +17,19 @@ type Environment struct {
 func NewEnvironment() *Environment {
 	loadDotEnvFile()
 
+	var appPort string
+
+	if getEnv("PORT") == "" {
+		appPort = "8080"
+	} else {
+		appPort = getEnv("PORT")
+	}
+
 	return &Environment{
 		AppEnv:    getEnv("KREST_APP_ENV"),
-		AppName:   getEnv("KREST_APP_NAME"),
-		AppPort:   getEnv("KREST_APP_PORT"),
-		KafkaHost: getEnv("KREST_KAFKA_HOST"),
+		AppName:   "kafka-rest",
+		AppPort:   appPort,
+		KafkaHost: getEnv("KAFKA_HOST"),
 	}
 }
 
