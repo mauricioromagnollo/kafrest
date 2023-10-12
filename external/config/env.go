@@ -29,7 +29,7 @@ func NewEnvironment() *Environment {
 		AppEnv:    getEnv("KREST_APP_ENV"),
 		AppName:   "kafka-rest",
 		AppPort:   appPort,
-		KafkaHost: getEnv("KAFKA_HOST"),
+		KafkaHost: getEnv("KAFKA_BROKERCONNECT"),
 	}
 }
 

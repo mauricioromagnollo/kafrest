@@ -6,3 +6,6 @@ POST http://localhost:8888/publish
 		"foo": "bar"
 	}
 }
+
+###
+GET http://localhost:8082/status
