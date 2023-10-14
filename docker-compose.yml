@@ -23,6 +23,19 @@ services:
     networks:
       - kafrest
 
+  mkdocs:
+    container_name: kafrest-mkdocs
+    build:
+      context: .
+      dockerfile: Dockerfile.mkdocs
+    image: kafrest-mkdocs-image
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    networks:
+      - kafrest
+
 networks:
   kafrest:
     driver: bridge
