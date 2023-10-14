@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - master
+    paths:
+      - "cmd/**"
+      - "external/**"
+      - "internal/**"
+      - Dockerfile
+      - .github/workflows/publish.yml
 
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
