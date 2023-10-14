@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mauricioromagnollo/kafkarest/external/config"
+	"github.com/mauricioromagnollo/kafrest/external/config"
 	"github.com/segmentio/kafka-go"
 )
 

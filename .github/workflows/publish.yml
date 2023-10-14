@@ -23,7 +23,7 @@ jobs:
 
       - name: Build the Docker image
         run: |
-          docker build -t mauricioromagnollo/kafka-rest:latest .
+          docker build -t mauricioromagnollo/kafrest:latest .
 
       - name: Login to Docker Hub
         run: |
@@ -32,4 +32,4 @@ jobs:
       - name: Publish Docker Image to Docker Hub
         if: success()
         run: |
-          docker push mauricioromagnollo/kafka-rest
+          docker push mauricioromagnollo/kafrest

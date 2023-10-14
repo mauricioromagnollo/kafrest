@@ -1,4 +1,4 @@
-module github.com/mauricioromagnollo/kafkarest
+module github.com/mauricioromagnollo/kafrest
 
 go 1.20
 

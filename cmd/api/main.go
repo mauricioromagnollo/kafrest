@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/mauricioromagnollo/kafkarest/external/config"
-	"github.com/mauricioromagnollo/kafkarest/external/controllers"
+	"github.com/mauricioromagnollo/kafrest/external/config"
+	"github.com/mauricioromagnollo/kafrest/external/controllers"
 )
 
 func main() {

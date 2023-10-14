@@ -3,7 +3,7 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/mauricioromagnollo/kafkarest/external/config"
+	"github.com/mauricioromagnollo/kafrest/external/config"
 )
 
 type StatusController struct {
