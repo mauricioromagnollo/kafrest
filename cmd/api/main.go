@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mauricioromagnollo/kafrest/external/config"
@@ -21,5 +23,16 @@ func main() {
 	r.Post("/messages", publishController.Handle)
 
 	port := fmt.Sprintf(":%v", env.AppPort)
-	http.ListenAndServe(port, r)
+
+	server := &http.Server{
+		Addr:         port,
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
 }

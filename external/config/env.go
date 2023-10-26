@@ -7,6 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Environment is the struct that will hold the environment variables.
 type Environment struct {
 	AppEnv    string
 	AppName   string
@@ -14,6 +15,7 @@ type Environment struct {
 	KafkaHost string
 }
 
+// NewEnvironment is the constructor for the Environment struct.
 func NewEnvironment() *Environment {
 	loadDotEnvFile()
 
