@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -14,13 +13,24 @@ import (
 func main() {
 	env := config.NewEnvironment()
 
+	logger, err := config.NewLogger(env.AppEnv != "test")
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
 	statusController := controllers.NewStatusController(env)
-	publishController := controllers.NewPublishController(env)
+	publishTopicMessagesController := controllers.NewPublishTopicMessagesController(env, logger)
 
 	r := chi.NewRouter()
 
 	r.Get("/status", statusController.Handle)
-	r.Post("/messages", publishController.Handle)
+
+	r.Route("/topics", func(r chi.Router) {
+		r.Route("/{topicName}", func(r chi.Router) {
+			r.Post("/messages", publishTopicMessagesController.Handle)
+		})
+	})
 
 	port := fmt.Sprintf(":%v", env.AppPort)
 
@@ -32,7 +42,9 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
+	logger.Info("Starting server")
 	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		logger.Error(fmt.Sprintf("Failed to start server %v", err))
+		panic(err)
 	}
 }

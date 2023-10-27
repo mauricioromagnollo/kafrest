@@ -1,11 +1,35 @@
-POST http://localhost:8080/publish
+@baseUrl = http://localhost:8080
+
+@topic_sample_01 = sample.foo-topic.0
+@topic_sample_02 = sample.bar-topic.0
+
+### Get Status
+GET {{baseUrl}}/status
+
+### Publish Topic Messages
+POST {{baseUrl}}/topics/{{topic_sample_01}}/messages
 
 {
-	"topic": "any-topic-name",
-	"message": {
-		"foo": "bar"
-	}
+	"messages": [
+		{
+			"foo": "bar"
+		},
+		{
+			"foo": "baz"
+		}
+	]
 }
 
-###
-GET http://localhost:8080/status
+### Publish Topic Messages
+POST {{baseUrl}}/topics/{{topic_sample_02}}/messages
+
+{
+	"messages": [
+		{
+			"foo": "bar"
+		},
+		{
+			"foo": "baz"
+		}
+	]
+}
