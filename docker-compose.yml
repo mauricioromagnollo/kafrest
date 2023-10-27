@@ -12,6 +12,11 @@ services:
       KAFKA_BROKERCONNECT: ${KAFKA_BROKERCONNECT}
     networks:
       - kafrest
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   kafrest-latest:
     container_name: kafrest-latest
@@ -22,6 +27,61 @@ services:
       KAFKA_BROKERCONNECT: ${KAFKA_BROKERCONNECT}
     networks:
       - kafrest
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  zookeeper:
+    container_name: kafrest-zookeeper
+    image: confluentinc/cp-zookeeper:latest
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+    environment:
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
+      ZOOKEEPER_TICK_TIME: ${ZOOKEEPER_TICK_TIME}
+    networks:
+      - kafrest
+
+  kafka:
+    container_name: kafrest-kafka
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+    volumes:
+      - kafka-storage:/var/lib/kafka
+    environment:
+      KAFKA_BROKER_ID: ${KAFKA_BROKER_ID}
+      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
+      KAFKA_INTER_BROKER_LISTENER_NAME: ${KAFKA_INTER_BROKER_LISTENER_NAME}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
+    networks:
+      - kafrest
+    healthcheck:
+      test: ["CMD", "nc", "-z", "-v", "-w3", "kafka", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  kafka-create-topics:
+    container_name: kafrest-kafka-create-topics
+    image: confluentinc/cp-server:7.3.5
+    depends_on:
+      - kafka
+    volumes:
+      - kafka-storage:/var/lib/kafka
+    networks:
+      - kafrest
+    command: >
+      bash -c
+        "kafka-topics --create --topic=sample.foo-topic.0 --if-not-exists --bootstrap-server=${KAFKA_BROKERCONNECT} && \
+        kafka-topics --create --topic=sample.bar-topic.0 --if-not-exists --bootstrap-server=${KAFKA_BROKERCONNECT}"
 
   mkdocs:
     container_name: kafrest-mkdocs
@@ -35,6 +95,28 @@ services:
       - .:/app
     networks:
       - kafrest
+
+  kafdrop:
+    container_name: kafrest-kafdrop
+    image: obsidiandynamics/kafdrop:latest
+    depends_on:
+      - kafka
+    ports:
+      - 19000:9000
+    environment:
+      KAFKA_BROKERCONNECT: ${KAFKA_BROKERCONNECT}
+    networks:
+      - kafrest
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  kafka-storage:
+  zookeeper-data:
+  zookeeper-log:
 
 networks:
   kafrest:
