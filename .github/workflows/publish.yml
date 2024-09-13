@@ -29,7 +29,7 @@ jobs:
 
       - name: Build the Docker image
         run: |
-          docker build -t mauricioromagnollo/kafrest:latest .
+          docker buildx build -t mauricioromagnollo/kafrest:latest --platform linux/amd64,linux/arm64 .
 
       - name: Login to Docker Hub
         run: |
