@@ -1,6 +1,25 @@
 name: Build and Publish Docker Image
 
 on:
+  release:
+    types: [published]
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/publish_docs.yml'
+      - '.github/workflows/ci.yml'
+      - '.gitignore'
+      - 'golangci.yml'
+      - '*.md'
+      - 'docker-compose.yml'
+      - 'Dockerfile.mkdocs'
+      - 'LICENSE'
+      - 'mkdocs.yml'
+      - 'README.md'
+      - '*.http'
+      - 'Makefile'
+      - 'requirements.txt'
+
+on:
   push:
     branches:
       - master
@@ -16,7 +35,8 @@ env:
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
 jobs:
-  build:
+  build_and_publish:
+    if: github.event.release.draft == false
     name: Build and Publish
     runs-on: ubuntu-latest
 
