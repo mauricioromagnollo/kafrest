@@ -14,7 +14,7 @@ repo_url: https://github.com/mauricioromagnollo/kafrest/
 # =====================================
 # Copyright
 # =====================================
-copyright: Copyright &copy; 2023 - Maurício Romagnollo
+copyright: Copyright &copy; 2025 - Maurício Romagnollo
 
 # =====================================
 # Theme
@@ -163,5 +163,5 @@ not_in_nav: |
 # Navigation
 # =====================================
 nav:
-  - Kafrest: 'INDEX.md'
+  - Kafrest: 'README.md'
   - Contributing: 'CONTRIBUTING.md'
