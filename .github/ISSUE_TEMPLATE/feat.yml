@@ -1,0 +1,65 @@
+name: 🚀 Feature
+description: Suggestion for a new feature or enhancement
+title: "[FEAT]: "
+labels: feat
+
+body:
+  - type: textarea
+    id: feature_description
+    attributes:
+      label: Feature Description
+      description: Clearly and objectively describe the new feature or improvement you would like to see implemented.
+      placeholder: "Example: Add an interactive navigation menu..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: Provide a detailed explanation of how this feature should work or how it could be implemented.
+      placeholder: "For example, a search system that allows users to filter results by category..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: Visual References or Examples
+      description: Add any relevant links, images, or references from other sites or designs that can serve as inspiration.
+      placeholder: "Link to a website with a similar feature..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Information
+      description: Add any other relevant context, such as technical constraints, frameworks that could be used, or required integrations.
+      placeholder: "Mention any technology preferences, limitations, or required APIs..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: can_fix
+    attributes:
+      label: Can you solve this issue?
+      description: Are you able to open a PR to solve this issue? We don't require you to fix it.
+      options:
+        - Yes
+        - No
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirm_checks
+    attributes:
+      label: Required confirmations
+      description: Please check all the boxes below before opening this Issue.
+      options:
+        - label: I have searched and confirmed this Issue does not already exist
+          required: true
+        - label: I have read the [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)
+          required: true
+        - label: I have read the [CONTRIBUTING.md](../CONTRIBUTING.md)
+          required: true
