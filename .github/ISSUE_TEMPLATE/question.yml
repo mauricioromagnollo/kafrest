@@ -1,0 +1,23 @@
+name: ❓ Question
+description: Ask a question or request clarification about the project
+title: "[QUESTION]: "
+labels: question
+
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: Clearly state your question or what you need clarification about.
+      placeholder: "How does the authentication process work in this project?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context or Details
+      description: Add any additional context, background, or details that could help others answer your question.
+      placeholder: "I'm trying to set up the project locally and encountered this step..."
+    validations:
+      required: false
