@@ -1,3 +1,42 @@
-tmp
+# Binaries for programs and plugins
+app
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin
+testbin/
+
+# Test binary, build with `go test -c`
+*.test
+
+# Coverage output
+*.out
+
+# Editor and IDEs
+.idea
+*.swp
+*.swo
+*~
+vendor/
+.vscode/
+tmp/
+__debug_bin*
+
+# Sensitive files
+*.dont
+*.pem
 *.env
 !.env.example
+
+# MacOS finder files
+.DS_Store
+
+# Temporary files
+*.tmp
+tmp/
+
+# Rest Client files
+*.http
+!request.http
