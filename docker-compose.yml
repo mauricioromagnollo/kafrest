@@ -1,25 +1,26 @@
-version: '3'
-
 services:
-  kafrest:
-    container_name: kafrest
+  api:
+    container_name: kafrest_api
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "${API_PORT}:${API_PORT}"
     environment:
       KAFKA_BROKERCONNECT: ${KAFKA_BROKERCONNECT}
+      API_PORT: ${API_PORT}
     networks:
       - kafrest
+    env_file:
+      - .env
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
+      test: ["CMD", "curl", "-f", "http://localhost:${API_PORT}/status"]
       interval: 10s
       timeout: 5s
       retries: 3
 
   kafrest-latest:
-    container_name: kafrest-latest
+    container_name: kafrest_latest
     image: mauricioromagnollo/kafrest:latest
     ports:
       - "8888:8080"
@@ -34,7 +35,7 @@ services:
       retries: 3
 
   zookeeper:
-    container_name: kafrest-zookeeper
+    container_name: kafrest_zookeeper
     image: confluentinc/cp-zookeeper:latest
     volumes:
       - zookeeper-data:/var/lib/zookeeper/data
@@ -46,31 +47,35 @@ services:
       - kafrest
 
   kafka:
-    container_name: kafrest-kafka
-    image: confluentinc/cp-kafka:latest
+    container_name: kafrest_kafka
+    image: confluentinc/cp-kafka:7.9.1
     depends_on:
       - zookeeper
     ports:
-      - 9092:9092
+      - ${KAFKA_PORT}:9092
     volumes:
       - kafka-storage:/var/lib/kafka
     environment:
-      KAFKA_BROKER_ID: ${KAFKA_BROKER_ID}
-      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
-      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
-      KAFKA_INTER_BROKER_LISTENER_NAME: ${KAFKA_INTER_BROKER_LISTENER_NAME}
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:${ZOOKEEPER_CLIENT_PORT}"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_HOST://localhost:${KAFKA_BROKERCONNECT_PORT},PLAINTEXT://kafka:${KAFKA_PORT}
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
     networks:
       - kafrest
     healthcheck:
-      test: ["CMD", "nc", "-z", "-v", "-w3", "kafka", "9092"]
+      test: ["CMD", "nc", "-z", "-v", "-w3", "kafka", "${KAFKA_PORT}"]
       interval: 10s
       timeout: 5s
       retries: 3
 
   kafka-create-topics:
-    container_name: kafrest-kafka-create-topics
+    container_name: kafrest_kafka-create-topics
     image: confluentinc/cp-server:7.3.5
     depends_on:
       - kafka
@@ -80,43 +85,42 @@ services:
       - kafrest
     command: >
       bash -c
-        "kafka-topics --create --topic=sample.foo-topic.0 --if-not-exists --bootstrap-server=${KAFKA_BROKERCONNECT} && \
-        kafka-topics --create --topic=sample.bar-topic.0 --if-not-exists --bootstrap-server=${KAFKA_BROKERCONNECT}"
+        "kafka-topics --create --topic=${TOPIC_FOO} --if-not-exists --bootstrap-server=${KAFKA_BROKERCONNECT} && \
+        kafka-topics --create --topic=${TOPIC_BAR} --if-not-exists --bootstrap-server=${KAFKA_BROKERCONNECT}"
 
   mkdocs:
-    container_name: kafrest-mkdocs
+    container_name: kafrest_mkdocs
     build:
       context: .
       dockerfile: Dockerfile.mkdocs
     image: kafrest-mkdocs-image
     ports:
-      - "8000:8000"
+      - "${MKDOCS_PORT}:8000"
     volumes:
       - .:/app
     networks:
       - kafrest
 
-  kafdrop:
-    container_name: kafrest-kafdrop
-    image: obsidiandynamics/kafdrop:latest
-    depends_on:
-      - kafka
+  akhq:
+    image: tchiotludo/akhq
+    hostname: akhq
+    container_name: kafrest_akhq
     ports:
-      - 19000:9000
-    environment:
-      KAFKA_BROKERCONNECT: ${KAFKA_BROKERCONNECT}
+      - ${AKHQ_PORT}:8080
+    expose:
+      - ${AKHQ_PORT}
     networks:
       - kafrest
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-volumes:
-  kafka-storage:
-  zookeeper-data:
-  zookeeper-log:
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka-server:
+              properties:
+                bootstrap.servers: ${KAFKA_BROKERS_SERVERS}
 
 networks:
   kafrest:

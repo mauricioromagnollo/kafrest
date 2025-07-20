@@ -1,28 +1,39 @@
 # ================================================
 # VARIABLES
 # ================================================
-ENV_DEV_FILE = --env-file .env.development
+ENV_FILE = --env-file .env
 
-MKDOCS_SERVICE = mkdocs
-MKDOCS_CONTAINER = kafrest-mkdocs
+API_SERVICE = api
+API_CONTAINER = kafrest_api
 
-API_SERVICE = kafrest
-API_CONTAINER = kafrest
+KAFKA_SERVICE = kafka
+KAFKA_CONTAINER = kafrest_kafka
 
 KAFKA_CREATE_TOPICS_SERVICE = kafka-create-topics
-KAFKA_CREATE_TOPICS_CONTAINER = kafrest-kafka-create-topics
+KAFKA_CREATE_TOPICS_CONTAINER = kafrest_kafka-create-topics
+
+MKDOCS_SERVICE = mkdocs
+MKDOCS_CONTAINER = kafrest_mkdocs
+
+KAFREST_LATEST_SERVICE = kafrest-latest
+KAFREST_LATEST_CONTAINER = kafrest_latest
+
+AKHQ_SERVICE = akhq
+AKHQ_CONTAINER = kafrest_akhq
 
 # ================================================
 # COMMON
 # ================================================
-default: build-zookeeper build-kafka kafka-create-topics run-api ## Build and run all containers
+default: zookeeper kafka kafka-create-topics akhq api ## Build and run all containers
 
 help: ## Print available commands
 	$(info ========================================)
 	$(info Available Commands:)
 	@grep '^[[:alnum:]_-]*:.* ##' $(MAKEFILE_LIST) \
-		| awk 'BEGIN {FS=":.* ## "}; {printf "make %-25s %s\n", $$1, $$2};'
+		| awk 'BEGIN {FS=":.* ## "}; {printf "\t%-25s %s\n", $$1, $$2};'
 	$(info ========================================)
+	$(info make <command>)
+	$(info )
 .PHONY: help
 
 lint: ## Run linter
@@ -30,33 +41,29 @@ lint: ## Run linter
 .PHONY: lint
 
 stop: ## Stop all containers
-	@docker-compose $(ENV_DEV_FILE) stop
+	@docker-compose $(ENV_FILE) stop
 .PHONY: stop
 
 start: ## Start all containers
-	@docker-compose $(ENV_DEV_FILE) start
+	@docker-compose $(ENV_FILE) start
 .PHONY: start
 
-clear: ## Remove all containers and volumes associated with this project
-	@docker-compose $(ENV_DEV_FILE) down -v
+clear: ## Stop containers, remove images, networks, and volumes
+	@docker compose down --rmi all --volumes --remove-orphans
 .PHONY: clear
-
-kafka-create-topics:
-	@docker-compose $(ENV_DEV_FILE) up -d --build $(KAFKA_CREATE_TOPICS_SERVICE)
-.PHONY: kafka-create-topics
 
 # =========================================
 # API
 # =========================================
-run-api: ## Build and run api
-	@docker-compose $(ENV_DEV_FILE) up -d --build $(API_SERVICE)
-.PHONY: run-api
+api: ## Build and run API
+	@docker-compose $(ENV_FILE) up -d --build $(API_SERVICE)
+.PHONY: api
 
-logs-api: ## Show Oculus API Logs
+logs: ## Show API Logs
 	@docker logs -f $(API_CONTAINER)
-.PHONY: api-logs
+.PHONY: logs
 
-clear-api: ## Remove Oculus API Container and Image
+api-clear: ## Remove API Container and Image
 	@docker-compose stop $(API_SERVICE)
 	@docker rm $(API_CONTAINER) -v
 .PHONY: api-clear
@@ -64,36 +71,46 @@ clear-api: ## Remove Oculus API Container and Image
 # =========================================
 # MKDOCS
 # =========================================
-run-docs: ## Build and run mkdocs
-	@docker-compose $(ENV_DEV_FILE) up -d --build $(MKDOCS_SERVICE)
-.PHONY: build-docs
+docs: ## Build and run mkdocs
+	@docker-compose $(ENV_FILE) up -d --build $(MKDOCS_SERVICE)
+.PHONY: docs
 
-clear-docs:
+docs-clear: ## Remove mkdocs Container and Image
 	@docker-compose stop $(MKDOCS_SERVICE)
 	@docker rm $(MKDOCS_CONTAINER) -v
-.PHONY: clear-docs
+.PHONY: docs-clear
 
-logs-docs:
+docs-logs:
 	@docker logs -f $(MKDOCS_CONTAINER)
-.PHONY: logs-docs
-
-# =========================================
-# ZOOKEEPER
-# =========================================
-build-zookeeper:
-	@docker-compose $(ENV_DEV_FILE) up -d --build $(ZOOKEEPER_SERVICE)
-.PHONY: build-zookeeper
+.PHONY: docs-logs
 
 # =========================================
 # KAFKA
 # =========================================
-build-kafka:
-	@docker-compose $(ENV_DEV_FILE) up -d --build $(KAFKA_SERVICE)
-.PHONY: build-kafka
+kafka:
+	@docker-compose $(ENV_FILE) up -d --build $(KAFKA_SERVICE)
+.PHONY: kafka
 
-# =========================================
-# KAFDROP
-# =========================================
-build-kafdrop:
-	@docker-compose $(ENV_DEV_FILE) up -d --build $(KAFDROP_SERVICE)
-.PHONY: build-kafdrop
+kafka-create-topics:
+	@docker-compose $(ENV_FILE) up -d --build $(KAFKA_CREATE_TOPICS_SERVICE)
+.PHONY: kafka-create-topics
+
+zookeeper:
+	@docker-compose $(ENV_FILE) up -d --build $(ZOOKEEPER_SERVICE)
+.PHONY: zookeeper
+
+# =====================================
+# AKHQ
+# =====================================
+akhq: ## Build akhq container
+	@docker compose $(ENV_FILE) up -d --build $(AKHQ_SERVICE)
+.PHONY: akhq
+
+akhq-logs: ## Show AKHQ Logs
+	@docker logs -f $(AKHQ_CONTAINER)
+.PHONY: akhq-logs
+
+akhq-clear: ## Remove AKHQ Container and Image
+	@docker stop $(AKHQ_CONTAINER)
+	@docker rm $(AKHQ_CONTAINER)
+.PHONY: akhq-clear
