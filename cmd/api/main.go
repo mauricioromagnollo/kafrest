@@ -1,38 +1,27 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-	"time"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/mauricioromagnollo/kafrest/external/config"
-	"github.com/mauricioromagnollo/kafrest/external/controllers"
+	"github.com/mauricioromagnollo/kafrest/config"
+	"github.com/mauricioromagnollo/kafrest/pkg/logger"
 )
 
 func main() {
-	env := config.NewEnvironment()
-
-	statusController := controllers.NewStatusController(env)
-	publishController := controllers.NewPublishController(env)
-
-	r := chi.NewRouter()
-
-	r.Get("/status", statusController.Handle)
-	r.Post("/messages", publishController.Handle)
-
-	port := fmt.Sprintf(":%v", env.AppPort)
-
-	server := &http.Server{
-		Addr:         port,
-		Handler:      r,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
+	// Build config instance
+	cfg, err := config.NewConfig()
+	if err != nil {
+		panic(err)
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
-	}
+	// Build logger instance
+	log := logger.NewLogger(cfg.App.Name, cfg.App.Env, "info")
+
+	// First log message
+	log.Info("application started")
+
+	// ...
+
+	log.Info("kafrest api started", logger.ExtraProps{
+		"port":         cfg.API.Port,
+		"kafka_broker": cfg.Kafka.BrokerConnect,
+	})
 }
