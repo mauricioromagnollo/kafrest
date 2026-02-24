@@ -1,109 +1,139 @@
 # ================================================
 # VARIABLES
 # ================================================
+APP_NAME = kafrest
 ENV_FILE = --env-file .env
 
-API_SERVICE = api
-API_CONTAINER = kafrest_api
+APP_SERVICE_NAME = app
+APP_CONTAINER_NAME= $(APP_NAME)_app
 
-KAFKA_SERVICE = kafka
-KAFKA_CONTAINER = kafrest_kafka
+ZOOKEEPER_SERVICE_NAME = zookeeper
+ZOOKEEPER_CONTAINER_NAME = $(APP_NAME)_zookeeper
 
-KAFKA_CREATE_TOPICS_SERVICE = kafka-create-topics
-KAFKA_CREATE_TOPICS_CONTAINER = kafrest_kafka-create-topics
+KAFKA_SERVICE_NAME = kafka
+KAFKA_CONTAINER_NAME = $(APP_NAME)_kafka
 
-MKDOCS_SERVICE = mkdocs
-MKDOCS_CONTAINER = kafrest_mkdocs
+AKHQ_SERVICE_NAME = akhq
+AKHQ_CONTAINER_NAME = $(APP_NAME)_akhq
 
-KAFREST_LATEST_SERVICE = kafrest-latest
-KAFREST_LATEST_CONTAINER = kafrest_latest
+SCHEMA_REGISTRY_SERVICE_NAME = schema-registry
+SCHEMA_REGISTRY_CONTAINER_NAME = $(APP_NAME)_schema-registry
+
+KAFKA_CREATE_TOPICS_SERVICE_NAME = kafka-create-topics
+KAFKA_CREATE_TOPICS_CONTAINER_NAME = $(APP_NAME)_kafka-create-topics
+
+MKDOCS_SERVICE_NAME = mkdocs
+MKDOCS_CONTAINER_NAME = kafrest_mkdocs
 
 AKHQ_SERVICE = akhq
 AKHQ_CONTAINER = kafrest_akhq
 
 # ================================================
-# COMMON
+# COMMANDS
 # ================================================
-default: zookeeper kafka kafka-create-topics akhq api ## Build and run all containers
+default: zookeeper kafka schema-registry topics app
 
-help: ## Print available commands
+all: zookeeper kafka schema-registry topics app akhq docs ## Build all "make" services including: AKHQ
+.PHONY: all
+
+help: ## Print all available commands
 	$(info ========================================)
 	$(info Available Commands:)
 	@grep '^[[:alnum:]_-]*:.* ##' $(MAKEFILE_LIST) \
-		| awk 'BEGIN {FS=":.* ## "}; {printf "\t%-25s %s\n", $$1, $$2};'
+		| awk 'BEGIN {FS=":.* ## "}; {printf "make %-25s %s\n", $$1, $$2};'
 	$(info ========================================)
-	$(info make <command>)
-	$(info )
 .PHONY: help
 
-lint: ## Run linter
-	docker run -t --rm -v .:/app -w /app golangci/golangci-lint:v1.54.2 golangci-lint run -v
-.PHONY: lint
+up: ## Up all containers in detached mode
+	@docker compose up -d
+.PHONY: up
 
-stop: ## Stop all containers
-	@docker-compose $(ENV_FILE) stop
+down: ## Down all containers, but keep images, networks, and volumes
+	@docker compose down
+.PHONY: down
+
+stop: ## Stop all containers, but keep images, networks, and volumes
+	@docker compose stop
 .PHONY: stop
 
-start: ## Start all containers
-	@docker-compose $(ENV_FILE) start
-.PHONY: start
-
-clear: ## Stop containers, remove images, networks, and volumes
+clear: ## Remove all containers, images, networks, and volumes
 	@docker compose down --rmi all --volumes --remove-orphans
 .PHONY: clear
 
 # =========================================
-# API
+# KAFKA
 # =========================================
-api: ## Build and run API
-	@docker-compose $(ENV_FILE) up -d --build $(API_SERVICE)
-.PHONY: api
+kafka: ## Build and run the kafka container
+	@docker compose $(ENV_FILE) up -d --build --remove-orphans $(KAFKA_SERVICE_NAME)
+.PHONY: kafka
 
-logs: ## Show API Logs
-	@docker logs -f $(API_CONTAINER)
+topics: ## Build container only for creating Kafka topics, drop it after the topics are created
+	@docker compose $(ENV_FILE) up -d --build --remove-orphans $(KAFKA_CREATE_TOPICS_SERVICE_NAME)
+.PHONY: topics
+
+zookeeper: ## Build and run the zookeeper container
+	@docker compose $(ENV_FILE) up -d --build --remove-orphans $(ZOOKEEPER_SERVICE_NAME)
+.PHONY: zookeeper
+
+
+# =========================================
+# APP
+# =========================================
+app: ## Build and run the app worker
+	@docker compose $(ENV_FILE) up -d --build $(APP_SERVICE_NAME)
+.PHONY: app
+
+open: ## Open a shell session inside the app container
+	@docker exec -it $(APP_CONTAINER_NAME) /bin/sh
+.PHONY: open
+
+logs: ## Show app logs
+	@docker logs -f $(APP_CONTAINER_NAME)
 .PHONY: logs
 
-api-clear: ## Remove API Container and Image
-	@docker-compose stop $(API_SERVICE)
-	@docker rm $(API_CONTAINER) -v
-.PHONY: api-clear
+lint: ## Run linter
+	docker run -t --rm -v ${PWD}/:/app -w /app golangci/golangci-lint:v2.9.0 golangci-lint run -v
+.PHONY: lint
+
+test: ## Run all app tests
+	@echo "Running tests..."
+	go test -v ./...
+.PHONY: test
+
+test-coverage: ## Run all app test coverage
+	go test -v -race -coverprofile=cover.out ./...
+	go tool cover -func=cover.out
+.PHONY: test-coverage
+
+test-coverage-web: ## Run test coverage and show in browser
+	go test -v -race -coverprofile=cover.out ./... && go tool cover -html=cover.out
+.PHONY: test-coverage-web
+
+test-race: # Run data race tests
+	CGO_ENABLED=1 go test -race ./...
+.PHONY: test-race
 
 # =========================================
 # MKDOCS
 # =========================================
 docs: ## Build and run mkdocs
-	@docker-compose $(ENV_FILE) up -d --build $(MKDOCS_SERVICE)
+	@docker-compose $(ENV_FILE) up -d --build $(MKDOCS_SERVICE_NAME)
 .PHONY: docs
 
 docs-clear: ## Remove mkdocs Container and Image
-	@docker-compose stop $(MKDOCS_SERVICE)
-	@docker rm $(MKDOCS_CONTAINER) -v
+	@docker-compose stop $(MKDOCS_SERVICE_NAME)
+	@docker rm $(MKDOCS_CONTAINER_NAME) -v
 .PHONY: docs-clear
 
 docs-logs:
-	@docker logs -f $(MKDOCS_CONTAINER)
+	@docker logs -f $(MKDOCS_CONTAINER_NAME)
 .PHONY: docs-logs
-
-# =========================================
-# KAFKA
-# =========================================
-kafka:
-	@docker-compose $(ENV_FILE) up -d --build $(KAFKA_SERVICE)
-.PHONY: kafka
-
-kafka-create-topics:
-	@docker-compose $(ENV_FILE) up -d --build $(KAFKA_CREATE_TOPICS_SERVICE)
-.PHONY: kafka-create-topics
-
-zookeeper:
-	@docker-compose $(ENV_FILE) up -d --build $(ZOOKEEPER_SERVICE)
-.PHONY: zookeeper
 
 # =====================================
 # AKHQ
 # =====================================
 akhq: ## Build akhq container
-	@docker compose $(ENV_FILE) up -d --build $(AKHQ_SERVICE)
+	@docker compose $(ENV_FILE) up -d --build --remove-orphans $(AKHQ_SERVICE_NAME)
 .PHONY: akhq
 
 akhq-logs: ## Show AKHQ Logs
