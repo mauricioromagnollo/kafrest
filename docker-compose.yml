@@ -1,16 +1,22 @@
 services:
-  api:
-    container_name: kafrest_api
+  app:
+    container_name: ${APP_NAME}_app
+    hostname: ${APP_NAME}
     build:
       context: .
       dockerfile: Dockerfile
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    env_file:
+      - .env
     ports:
       - "${API_PORT}:${API_PORT}"
     environment:
       KAFKA_BROKERCONNECT: ${KAFKA_BROKERCONNECT}
       API_PORT: ${API_PORT}
-    networks:
-      - kafrest
     env_file:
       - .env
     healthcheck:
@@ -19,42 +25,25 @@ services:
       timeout: 5s
       retries: 3
 
-  kafrest-latest:
-    container_name: kafrest_latest
-    image: mauricioromagnollo/kafrest:latest
-    ports:
-      - "8888:8080"
-    environment:
-      KAFKA_BROKERCONNECT: ${KAFKA_BROKERCONNECT}
-    networks:
-      - kafrest
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888/status"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
   zookeeper:
-    container_name: kafrest_zookeeper
-    image: confluentinc/cp-zookeeper:latest
-    volumes:
-      - zookeeper-data:/var/lib/zookeeper/data
-      - zookeeper-log:/var/lib/zookeeper/log
+    container_name: ${APP_NAME}_zookeeper
+    image: confluentinc/cp-zookeeper:7.8.0
+    ports:
+      - ${ZOOKEEPER_CLIENT_PORT}:2181
+      - 2888:2888
+      - 3888:3888
     environment:
       ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
       ZOOKEEPER_TICK_TIME: ${ZOOKEEPER_TICK_TIME}
-    networks:
-      - kafrest
 
   kafka:
-    container_name: kafrest_kafka
     image: confluentinc/cp-kafka:7.9.1
+    container_name: ${APP_NAME}_kafka
     depends_on:
       - zookeeper
     ports:
       - ${KAFKA_PORT}:9092
-    volumes:
-      - kafka-storage:/var/lib/kafka
+      - ${KAFKA_BROKERCONNECT_PORT}:29092
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:${ZOOKEEPER_CLIENT_PORT}"
@@ -66,8 +55,6 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
-    networks:
-      - kafrest
     healthcheck:
       test: ["CMD", "nc", "-z", "-v", "-w3", "kafka", "${KAFKA_PORT}"]
       interval: 10s
@@ -75,18 +62,35 @@ services:
       retries: 3
 
   kafka-create-topics:
-    container_name: kafrest_kafka-create-topics
     image: confluentinc/cp-server:7.3.5
+    container_name: ${APP_NAME}_kafka-create-topics
     depends_on:
-      - kafka
-    volumes:
-      - kafka-storage:/var/lib/kafka
-    networks:
-      - kafrest
+      kafka:
+        condition: service_healthy
     command: >
       bash -c
-        "kafka-topics --create --topic=${TOPIC_FOO} --if-not-exists --bootstrap-server=${KAFKA_BROKERCONNECT} && \
-        kafka-topics --create --topic=${TOPIC_BAR} --if-not-exists --bootstrap-server=${KAFKA_BROKERCONNECT}"
+        "kafka-topics --create --topic=${KAFKA_TOPIC_SAMPLE} --if-not-exists --bootstrap-server=${KAFKA_BROKERS_SERVERS}"
+
+  akhq:
+    image: tchiotludo/akhq:0.26.0
+    container_name: ${APP_NAME}_akhq
+    hostname: akhq
+    ports:
+      - ${AKHQ_PORT}:8080
+    expose:
+      - ${AKHQ_PORT}
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka-server:
+              properties:
+                bootstrap.servers: ${KAFKA_BROKERS_SERVERS}
+              schema-registry:
+                url: "http://schema-registry:${SCHEMA_REGISTRY_PORT}"
 
   mkdocs:
     container_name: kafrest_mkdocs
@@ -98,30 +102,3 @@ services:
       - "${MKDOCS_PORT}:8000"
     volumes:
       - .:/app
-    networks:
-      - kafrest
-
-  akhq:
-    image: tchiotludo/akhq
-    hostname: akhq
-    container_name: kafrest_akhq
-    ports:
-      - ${AKHQ_PORT}:8080
-    expose:
-      - ${AKHQ_PORT}
-    networks:
-      - kafrest
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      AKHQ_CONFIGURATION: |
-        akhq:
-          connections:
-            docker-kafka-server:
-              properties:
-                bootstrap.servers: ${KAFKA_BROKERS_SERVERS}
-
-networks:
-  kafrest:
-    driver: bridge
