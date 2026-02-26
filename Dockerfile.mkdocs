@@ -1,6 +1,15 @@
 FROM python:3.8-slim
+
 WORKDIR /app
-COPY . /app
+
+COPY requirements.txt /app
+COPY docs /app/docs
+COPY mkdocs.yml /app
+
 RUN pip install -r requirements.txt
-EXPOSE 8000
-CMD ["mkdocs", "serve", "--dev-addr=0.0.0.0:8000"]
+
+ENV MKDOCS_PORT=8000
+
+EXPOSE ${MKDOCS_PORT}
+
+CMD ["sh", "-c", "mkdocs serve --dev-addr=0.0.0.0:${MKDOCS_PORT}"]
