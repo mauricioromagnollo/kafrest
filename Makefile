@@ -23,17 +23,17 @@ KAFKA_CREATE_TOPICS_SERVICE_NAME = kafka-create-topics
 KAFKA_CREATE_TOPICS_CONTAINER_NAME = $(APP_NAME)_kafka-create-topics
 
 MKDOCS_SERVICE_NAME = mkdocs
-MKDOCS_CONTAINER_NAME = kafrest_mkdocs
+MKDOCS_CONTAINER_NAME = $(APP_NAME)_mkdocs
 
 AKHQ_SERVICE = akhq
-AKHQ_CONTAINER = kafrest_akhq
+AKHQ_CONTAINER = $(APP_NAME)_akhq
 
 # ================================================
 # COMMANDS
 # ================================================
 default: zookeeper kafka schema-registry topics app
 
-all: zookeeper kafka schema-registry topics app akhq docs ## Build all "make" services including: AKHQ
+all: zookeeper kafka schema-registry topics app akhq docs ## Build all "make" services including: AKHQ, MKDOCS
 .PHONY: all
 
 help: ## Print all available commands
@@ -74,7 +74,6 @@ topics: ## Build container only for creating Kafka topics, drop it after the top
 zookeeper: ## Build and run the zookeeper container
 	@docker compose $(ENV_FILE) up -d --build --remove-orphans $(ZOOKEEPER_SERVICE_NAME)
 .PHONY: zookeeper
-
 
 # =========================================
 # APP
