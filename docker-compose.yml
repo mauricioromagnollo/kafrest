@@ -8,10 +8,6 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-      schema-registry:
-        condition: service_healthy
-    env_file:
-      - .env
     ports:
       - "${API_PORT}:${API_PORT}"
     environment:
@@ -98,7 +94,9 @@ services:
       context: .
       dockerfile: Dockerfile.mkdocs
     image: kafrest-mkdocs-image
+    environment:
+      MKDOCS_PORT: ${MKDOCS_PORT}
     ports:
-      - "${MKDOCS_PORT}:8000"
+      - "${MKDOCS_PORT}:${MKDOCS_PORT}"
     volumes:
       - .:/app
