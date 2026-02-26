@@ -99,4 +99,5 @@ services:
     ports:
       - "${MKDOCS_PORT}:${MKDOCS_PORT}"
     volumes:
-      - .:/app
+      - ./docs:/app/docs
+      - ./mkdocs.yml:/app/mkdocs.yml
