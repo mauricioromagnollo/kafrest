@@ -11,8 +11,9 @@ import (
 // Returns a pointer to the Config instance and an error if the processing fails.
 func NewConfig() (*Config, error) {
 	cfg := &Config{}
+
 	if err := envconfig.Process("", cfg); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedToLoadEnvironments, err)
+		return nil, fmt.Errorf("%w: %w", ErrFailedToLoadEnvironments, err)
 	}
 
 	return cfg, nil

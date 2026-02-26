@@ -21,7 +21,7 @@ func main() {
 	// ...
 
 	log.Info("kafrest api started", logger.ExtraProps{
-		"port":         cfg.API.Port,
-		"kafka_broker": cfg.Kafka.BrokerConnect,
+		"port":          cfg.API.Port,
+		"kafka_brokers": cfg.Kafka.BrokersServers,
 	})
 }
